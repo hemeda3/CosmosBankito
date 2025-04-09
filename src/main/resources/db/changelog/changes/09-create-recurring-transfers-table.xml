@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="09" author="bankito">
+        <createTable tableName="recurring_transfers">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="source_account_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_recurring_transfer_source_account" references="accounts(id)"/>
+            </column>
+            <column name="destination_account_number" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="destination_bank_code" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="DECIMAL(19, 4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency_code" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="frequency" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="DATE"/>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_executed_at" type="TIMESTAMP"/>
+            <column name="last_execution_date" type="DATE"/>
+            <column name="next_execution_at" type="TIMESTAMP"/>
+            <column name="cancellation_reason" type="VARCHAR(255)"/>
+            <column name="last_failure_date" type="DATE"/>
+            <column name="last_failure_reason" type="VARCHAR(255)"/>
+            <column name="failure_count" type="INT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true"/>
+            <column name="deactivation_reason" type="VARCHAR(255)"/>
+            <column name="customer_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_recurring_transfer_customer" references="customers(id)"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

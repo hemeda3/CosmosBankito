@@ -1,0 +1,93 @@
+server:
+  http2:
+    enabled: true
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_DB_SERVER_ADDRESS:localhost}:${POSTGRES_DB_SERVER_PORT:5432}/
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:example}
+    hikari:
+      pool-name: SpringBootBoilerplateHikariPool
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  jta:
+    enabled: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+  # Email Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:my.gmail@gmail.com}
+    password: ${MAIL_PASSWORD:password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        debug: false
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+  show-actuator: true
+
+management:
+  endpoint:
+    health:
+      show-details: ALWAYS
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    org.springframework: INFO
+    com.ahmedyousri.boilerplate.springboot: INFO
+    
+# Blockchain Configuration
+blockchain:
+  mock:
+    enabled: false  # Set to true to use mock blockchain
+  testnet:
+    enabled: false   # Set to true to use Cosmos testnet
+  production:
+    enabled: true  # Set to true to use production blockchain
+
+# Cosmos SDK Configuration
+cosmos:
+  node:
+    rest:
+      endpoint: http://localhost:1317
+    rpc:
+      endpoint: http://localhost:26657
+  chain:
+    id: quicktest
+
+app:
+  alerts:
+    email:
+      enabled: true
+      recipients: admin@bank.com
+      from: alerts@bank.com
+    sms:
+      enabled: false
+      recipients: +1234567890
+
+## FIXME : Customize JWT token and Swagger information for your application
+
+jwt:
+  secretKey: secret
+  issuer: www.ahmedyousri.com
+  expirationMinute: 10

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="05" author="bankito">
+        <createTable tableName="accounts">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT"/>
+            <column name="account_number" type="VARCHAR(50)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="blockchain_account_id" type="VARCHAR(255)">
+                <constraints unique="true"/>
+            </column>
+            <column name="iban" type="VARCHAR(34)"/>
+            <column name="account_name" type="VARCHAR(100)"/>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency_code" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_balance" type="DECIMAL(19, 4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="available_balance" type="DECIMAL(19, 4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="opened_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_transaction_date" type="TIMESTAMP"/>
+            <column name="interest_rate" type="DOUBLE"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP"/>
+            <column name="closed_at" type="TIMESTAMP"/>
+            <column name="closure_reason" type="VARCHAR(255)"/>
+            <column name="customer_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_account_customer" references="customers(id)"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

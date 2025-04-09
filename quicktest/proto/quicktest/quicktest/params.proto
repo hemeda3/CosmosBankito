@@ -1,0 +1,15 @@
+syntax = "proto3";
+package quicktest.quicktest;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "quicktest/x/quicktest/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (amino.name) = "quicktest/x/quicktest/Params";
+  option (gogoproto.equal) = true;
+
+  
+}

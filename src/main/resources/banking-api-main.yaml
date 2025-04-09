@@ -1,0 +1,2072 @@
+openapi: 3.0.3
+info:
+  title: SDGT Banking API
+  description: |
+    API specification for SDGT Banking Application, providing secure access to banking features 
+    including customer management, accounts, transactions, payees, transfers, and more.
+    
+    This API is designed to work with both traditional and blockchain-backed banking systems
+    while maintaining standard banking UX without exposing blockchain concepts to end users.
+  version: 1.0.0
+  contact:
+    name: SDGT Banking API Support
+    email: api-support@sdgtbanking.com
+servers:
+  - url: https://api.sdgtbanking.com/v1
+    description: Production server
+  - url: https://api-dev.sdgtbanking.com/v1
+    description: Development server
+tags:
+  - name: Authentication
+    description: Authentication and authorization endpoints
+  - name: Customers
+    description: Customer account management
+  - name: Accounts
+    description: Bank account operations
+  - name: Payees
+    description: Manage payment recipients
+  - name: Transfers
+    description: Money transfer operations
+  - name: Transactions
+    description: Transaction history and operations
+  - name: Bills
+    description: Bill management and payments
+  - name: Cards
+    description: Payment card management
+
+paths:
+  #-------------------------------
+  # Authentication Endpoints
+  #-------------------------------
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new customer
+      description: |
+        Creates a new customer account with basic information. Additional KYC
+        information can be added through the customer profile endpoints.
+      operationId: registerCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CustomerRegistrationRequest'
+      responses:
+        '201':
+          description: Customer successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AuthResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '409':
+          description: Customer with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login to the system
+      description: |
+        Authenticates a customer using email and password, returning a JWT token.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AuthResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: |
+        Sends a password reset link to the customer's email.
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/MessageResponse'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: |
+        Resets a customer's password using a token received via email.
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/MessageResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh authentication token
+      description: |
+        Refreshes the JWT access token using a valid refresh token.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AuthResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  #-------------------------------
+  # Customer Endpoints
+  #-------------------------------
+  /customers/me:
+    get:
+      tags:
+        - Customers
+      summary: Get current customer profile
+      description: |
+        Returns the profile information of the authenticated customer.
+      operationId: getCurrentCustomerProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Customer profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CustomerProfileResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Customers
+      summary: Update customer profile
+      description: |
+        Updates the profile information of the authenticated customer.
+      operationId: updateCustomerProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CustomerProfileUpdateRequest'
+      responses:
+        '200':
+          description: Customer profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CustomerProfileResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /customers/me/contact:
+    post:
+      tags:
+        - Customers
+      summary: Add customer contact information
+      description: |
+        Adds a new contact method (phone, email, address) to the customer profile.
+      operationId: addCustomerContact
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CustomerContactRequest'
+      responses:
+        '201':
+          description: Contact information added successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CustomerContactResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Customers
+      summary: Get customer contact information
+      description: |
+        Retrieves all contact methods (phones, emails, addresses) for the customer.
+      operationId: getCustomerContacts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Contact information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CustomerContactsResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /customers/me/contact/{contactId}:
+    put:
+      tags:
+        - Customers
+      summary: Update contact information
+      description: |
+        Updates a specific contact method by ID.
+      operationId: updateContact
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          description: ID of the contact to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CustomerContactUpdateRequest'
+      responses:
+        '200':
+          description: Contact updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CustomerContactResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Customers
+      summary: Delete contact information
+      description: |
+        Deletes a specific contact method by ID.
+      operationId: deleteContact
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          description: ID of the contact to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Contact deleted successfully
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /customers/me/identification:
+    post:
+      tags:
+        - Customers
+      summary: Upload identification document
+      description: |
+        Uploads a new identification document for KYC verification.
+      operationId: uploadIdentificationDocument
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/IdentificationDocumentUploadRequest'
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/IdentificationDocumentResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Customers
+      summary: Get identification documents
+      description: |
+        Retrieves all identification documents for the customer.
+      operationId: getIdentificationDocuments
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/IdentificationDocumentsResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  #-------------------------------
+  # Account Endpoints
+  #-------------------------------
+  /accounts:
+    post:
+      tags:
+        - Accounts
+      summary: Create a new account
+      description: |
+        Creates a new bank account for the authenticated customer.
+      operationId: createAccount
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/AccountCreationRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AccountResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+
+    get:
+      tags:
+        - Accounts
+      summary: List customer accounts
+      description: |
+        Returns a list of all accounts owned by the authenticated customer.
+      operationId: getCustomerAccounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter accounts by status
+          schema:
+            type: string
+            enum: [active, inactive, dormant, frozen, closed, pending, blocked]
+        - name: type
+          in: query
+          required: false
+          description: Filter accounts by type
+          schema:
+            type: string
+            enum: [currentAccount, savingsAccount, fixedDeposit, loanAccount, creditCard, investmentAccount, walletAccount, foreignCurrency]
+      responses:
+        '200':
+          description: Accounts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AccountsListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /accounts/{accountId}:
+    get:
+      tags:
+        - Accounts
+      summary: Get account details
+      description: |
+        Returns details for a specific account.
+      operationId: getAccountDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Account details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AccountDetailResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Accounts
+      summary: Update account settings
+      description: |
+        Updates settings for a specific account (e.g., account name).
+      operationId: updateAccountSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/AccountUpdateRequest'
+      responses:
+        '200':
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AccountResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /accounts/{accountId}/close:
+    post:
+      tags:
+        - Accounts
+      summary: Close an account
+      description: |
+        Initiates the process to close a specific account.
+      operationId: closeAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account to close
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/AccountCloseRequest'
+      responses:
+        '200':
+          description: Account closure initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/MessageResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /accounts/{accountId}/balance:
+    get:
+      tags:
+        - Accounts
+      summary: Get account balance
+      description: |
+        Returns the current and available balance for a specific account.
+      operationId: getAccountBalance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Account balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AccountBalanceResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /accounts/{accountId}/statements:
+    get:
+      tags:
+        - Accounts
+      summary: Get account statements
+      description: |
+        Returns a list of available statements for an account.
+      operationId: getAccountStatements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: false
+          description: Start date for statements (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          description: End date for statements (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Account statements retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/AccountStatementsResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /accounts/{accountId}/statement/{statementId}:
+    get:
+      tags:
+        - Accounts
+      summary: Download account statement
+      description: |
+        Downloads a specific statement in PDF format.
+      operationId: downloadAccountStatement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account
+          schema:
+            type: string
+            format: uuid
+        - name: statementId
+          in: path
+          required: true
+          description: ID of the statement
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statement downloaded successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  #-------------------------------
+  # Payee Endpoints
+  #-------------------------------
+  /payees:
+    post:
+      tags:
+        - Payees
+      summary: Create a new payee
+      description: |
+        Adds a new payment recipient (payee) to the customer's list.
+      operationId: createPayee
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/PayeeCreationRequest'
+      responses:
+        '201':
+          description: Payee created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/PayeeResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Payees
+      summary: List all payees
+      description: |
+        Returns a list of all payees for the authenticated customer.
+      operationId: getCustomerPayees
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          required: false
+          description: Filter payees by type
+          schema:
+            type: string
+            enum: [individual, business, utility, government, charity, financial, international]
+        - name: category
+          in: query
+          required: false
+          description: Filter payees by category
+          schema:
+            type: string
+            enum: [family, friend, shopping, housing, utilities, education, healthcare, transportation, entertainment, professional, investment, insurance, tax, other]
+        - name: search
+          in: query
+          required: false
+          description: Search term to filter payees by name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payees retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/PayeesListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /payees/categories:
+    get:
+      tags:
+        - Payees
+      summary: Get payee categories
+      description: |
+        Returns a list of available payee categories.
+      operationId: getPayeeCategories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/PayeeCategoriesResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /payees/{payeeId}:
+    get:
+      tags:
+        - Payees
+      summary: Get payee details
+      description: |
+        Returns details for a specific payee.
+      operationId: getPayeeDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: ID of the payee to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payee details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/PayeeResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Payees
+      summary: Update payee
+      description: |
+        Updates details for a specific payee.
+      operationId: updatePayee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: ID of the payee to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/PayeeUpdateRequest'
+      responses:
+        '200':
+          description: Payee updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/PayeeResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Payees
+      summary: Delete payee
+      description: |
+        Deletes a specific payee.
+      operationId: deletePayee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: ID of the payee to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Payee deleted successfully
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /payees/{payeeId}/favorite:
+    put:
+      tags:
+        - Payees
+      summary: Toggle favorite status
+      description: |
+        Marks or unmarks a payee as favorite.
+      operationId: togglePayeeFavorite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: ID of the payee
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/PayeeFavoriteRequest'
+      responses:
+        '200':
+          description: Favorite status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/PayeeResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  #-------------------------------
+  # Transfer Endpoints
+  #-------------------------------
+  /transfers:
+    post:
+      tags:
+        - Transfers
+      summary: Create a new transfer
+      description: |
+        Initiates a new money transfer between accounts or to a payee.
+      operationId: createTransfer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/TransferCreationRequest'
+      responses:
+        '201':
+          description: Transfer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransferResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+    get:
+      tags:
+        - Transfers
+      summary: List transfers
+      description: |
+        Returns a list of transfers for the authenticated customer.
+      operationId: getCustomerTransfers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter transfers by status
+          schema:
+            type: string
+            enum: [draft, pending, processing, completed, failed, canceled, scheduled, partiallyCompleted, returned, rejected]
+        - name: type
+          in: query
+          required: false
+          description: Filter transfers by type
+          schema:
+            type: string
+            enum: [internal, domestic, international, ownAccounts, billPayment, topUp, investment, loan, scheduled]
+        - name: startDate
+          in: query
+          required: false
+          description: Start date for transfers (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          description: End date for transfers (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Transfers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransfersListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /transfers/{transferId}:
+    get:
+      tags:
+        - Transfers
+      summary: Get transfer details
+      description: |
+        Returns details for a specific transfer.
+      operationId: getTransferDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          description: ID of the transfer to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transfer details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransferDetailResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /transfers/{transferId}/cancel:
+    post:
+      tags:
+        - Transfers
+      summary: Cancel a transfer
+      description: |
+        Cancels a pending or scheduled transfer.
+      operationId: cancelTransfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          description: ID of the transfer to cancel
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/TransferCancelRequest'
+      responses:
+        '200':
+          description: Transfer canceled successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/MessageResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /transfers/scheduled:
+    post:
+      tags:
+        - Transfers
+      summary: Schedule a transfer
+      description: |
+        Creates a scheduled transfer for future execution.
+      operationId: scheduleTransfer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/ScheduledTransferRequest'
+      responses:
+        '201':
+          description: Transfer scheduled successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransferResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+    get:
+      tags:
+        - Transfers
+      summary: List scheduled transfers
+      description: |
+        Returns a list of scheduled transfers for the authenticated customer.
+      operationId: getScheduledTransfers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Scheduled transfers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransfersListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /transfers/recurring:
+    post:
+      tags:
+        - Transfers
+      summary: Create recurring transfer
+      description: |
+        Sets up a recurring transfer that repeats on a schedule.
+      operationId: createRecurringTransfer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/RecurringTransferRequest'
+      responses:
+        '201':
+          description: Recurring transfer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/RecurringTransferResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+    get:
+      tags:
+        - Transfers
+      summary: List recurring transfers
+      description: |
+        Returns a list of recurring transfers for the authenticated customer.
+      operationId: getRecurringTransfers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Recurring transfers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/RecurringTransfersListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /transfers/recurring/{recurringTransferId}:
+    put:
+      tags:
+        - Transfers
+      summary: Update recurring transfer
+      description: |
+        Updates an existing recurring transfer.
+      operationId: updateRecurringTransfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: recurringTransferId
+          in: path
+          required: true
+          description: ID of the recurring transfer to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/RecurringTransferUpdateRequest'
+      responses:
+        '200':
+          description: Recurring transfer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/RecurringTransferResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Transfers
+      summary: Cancel recurring transfer
+      description: |
+        Cancels an existing recurring transfer.
+      operationId: cancelRecurringTransfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: recurringTransferId
+          in: path
+          required: true
+          description: ID of the recurring transfer to cancel
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Recurring transfer canceled successfully
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  #-------------------------------
+  # Transaction Endpoints
+  #-------------------------------
+  /accounts/{accountId}/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: List account transactions
+      description: |
+        Returns a list of transactions for a specific account.
+      operationId: getAccountTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: false
+          description: Start date for transactions (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          description: End date for transactions (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: type
+          in: query
+          required: false
+          description: Filter transactions by type
+          schema:
+            type: string
+            enum: [deposit, withdrawal, transfer, payment, fee, interest, reversal, adjustment, loan, refund, exchange]
+        - name: status
+          in: query
+          required: false
+          description: Filter transactions by status
+          schema:
+            type: string
+            enum: [pending, completed, failed, canceled, disputed, reversed, held, clearing]
+        - name: minAmount
+          in: query
+          required: false
+          description: Minimum transaction amount
+          schema:
+            type: number
+            format: double
+        - name: maxAmount
+          in: query
+          required: false
+          description: Maximum transaction amount
+          schema:
+            type: number
+            format: double
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransactionsListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /transactions/{transactionId}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction details
+      description: |
+        Returns details for a specific transaction.
+      operationId: getTransactionDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          description: ID of the transaction to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransactionDetailResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /transactions/{transactionId}/receipt:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction receipt
+      description: |
+        Returns a receipt for a completed transaction.
+      operationId: getTransactionReceipt
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          description: ID of the transaction
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: false
+          description: Format of the receipt
+          schema:
+            type: string
+            enum: [pdf, json]
+            default: pdf
+      responses:
+        '200':
+          description: Receipt retrieved successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransactionReceiptResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  #-------------------------------
+  # Bill Endpoints
+  #-------------------------------
+  /bills:
+    post:
+      tags:
+        - Bills
+      summary: Create a new bill
+      description: |
+        Creates a new bill record for tracking and payment.
+      operationId: createBill
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/BillCreationRequest'
+      responses:
+        '201':
+          description: Bill created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/BillResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+    get:
+      tags:
+        - Bills
+      summary: List bills
+      description: |
+        Returns a list of bills for the authenticated customer.
+      operationId: getCustomerBills
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter bills by status
+          schema:
+            type: string
+            enum: [upcoming, due, overdue, paid, partiallypaid, cancelled, disputed]
+        - name: category
+          in: query
+          required: false
+          description: Filter bills by category
+          schema:
+            type: string
+            enum: [utility, rent, mortgage, insurance, subscription, creditCard, loan, telecom, education, healthcare, tax, other]
+        - name: dueStartDate
+          in: query
+          required: false
+          description: Start date for due dates (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: dueEndDate
+          in: query
+          required: false
+          description: End date for due dates (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Bills retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/BillsListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /bills/{billId}:
+    get:
+      tags:
+        - Bills
+      summary: Get bill details
+      description: |
+        Returns details for a specific bill.
+      operationId: getBillDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          description: ID of the bill to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bill details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/BillDetailResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Bills
+      summary: Update bill
+      description: |
+        Updates details for a specific bill.
+      operationId: updateBill
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          description: ID of the bill to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/BillUpdateRequest'
+      responses:
+        '200':
+          description: Bill updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/BillResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Bills
+      summary: Delete bill
+      description: |
+        Deletes a specific bill.
+      operationId: deleteBill
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          description: ID of the bill to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bill deleted successfully
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /bills/{billId}/pay:
+    post:
+      tags:
+        - Bills
+      summary: Pay a bill
+      description: |
+        Initiates payment for a specific bill.
+      operationId: payBill
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          description: ID of the bill to pay
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/BillPaymentRequest'
+      responses:
+        '200':
+          description: Bill payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/TransferResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+  /bills/{billId}/autopay:
+    post:
+      tags:
+        - Bills
+      summary: Set up automatic bill payment
+      description: |
+        Configures automatic payment for a bill.
+      operationId: setupAutopay
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          description: ID of the bill
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/AutopayRequest'
+      responses:
+        '200':
+          description: Autopay configured successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/BillResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Bills
+      summary: Disable automatic bill payment
+      description: |
+        Turns off automatic payment for a bill.
+      operationId: disableAutopay
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          description: ID of the bill
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Autopay disabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/BillResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  #-------------------------------
+  # Card Endpoints
+  #-------------------------------
+  /cards:
+    post:
+      tags:
+        - Cards
+      summary: Request a new card
+      description: |
+        Initiates a request for a new debit or credit card.
+      operationId: requestCard
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CardRequestCreationRequest'
+      responses:
+        '201':
+          description: Card request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardRequestResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+    get:
+      tags:
+        - Cards
+      summary: List cards
+      description: |
+        Returns a list of cards for the authenticated customer.
+      operationId: getCustomerCards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter cards by status
+          schema:
+            type: string
+            enum: [active, inactive, blocked, suspended, expired, pendingActivation, canceled, stolen, lost, damaged]
+        - name: type
+          in: query
+          required: false
+          description: Filter cards by type
+          schema:
+            type: string
+            enum: [debit, credit, prepaid, giftCard, virtual, corporate]
+      responses:
+        '200':
+          description: Cards retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardsListResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+
+  /cards/{cardId}:
+    get:
+      tags:
+        - Cards
+      summary: Get card details
+      description: |
+        Returns details for a specific card.
+      operationId: getCardDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardDetailResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /cards/{cardId}/activate:
+    post:
+      tags:
+        - Cards
+      summary: Activate card
+      description: |
+        Activates a newly issued card.
+      operationId: activateCard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card to activate
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CardActivationRequest'
+      responses:
+        '200':
+          description: Card activated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardDetailResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
+  /cards/{cardId}/block:
+    post:
+      tags:
+        - Cards
+      summary: Block card
+      description: |
+        Temporarily blocks a card from being used.
+      operationId: blockCard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card to block
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CardBlockRequest'
+      responses:
+        '200':
+          description: Card blocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardDetailResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /cards/{cardId}/unblock:
+    post:
+      tags:
+        - Cards
+      summary: Unblock card
+      description: |
+        Unblocks a previously blocked card.
+      operationId: unblockCard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card to unblock
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card unblocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardDetailResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /cards/{cardId}/replace:
+    post:
+      tags:
+        - Cards
+      summary: Replace card
+      description: |
+        Requests a replacement for a lost, stolen, or damaged card.
+      operationId: replaceCard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card to replace
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CardReplaceRequest'
+      responses:
+        '200':
+          description: Card replacement initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardRequestResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /cards/{cardId}/limits:
+    get:
+      tags:
+        - Cards
+      summary: Get card limits
+      description: |
+        Returns the spending limits for a specific card.
+      operationId: getCardLimits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card limits retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardLimitsResponse'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Cards
+      summary: Update card limits
+      description: |
+        Updates the spending limits for a specific card.
+      operationId: updateCardLimits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CardLimitsUpdateRequest'
+      responses:
+        '200':
+          description: Card limits updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/CardLimitsResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+
+  /cards/{cardId}/pin:
+    post:
+      tags:
+        - Cards
+      summary: Set card PIN
+      description: |
+        Sets or changes the PIN for a specific card.
+      operationId: setCardPin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID of the card
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './banking-api-components.yaml#/components/schemas/CardPinRequest'
+      responses:
+        '200':
+          description: Card PIN set successfully
+          content:
+            application/json:
+              schema:
+                $ref: './banking-api-components.yaml#/components/schemas/MessageResponse'
+        '400':
+          $ref: './banking-api-components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './banking-api-components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './banking-api-components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './banking-api-components.yaml#/components/responses/NotFound'
+        '422':
+          $ref: './banking-api-components.yaml#/components/responses/UnprocessableEntity'
+
